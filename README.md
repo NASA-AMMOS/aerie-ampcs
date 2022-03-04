@@ -1,5 +1,6 @@
 ![ci](https://github.com/NASA-AMMOS/aerie-ampcs/actions/workflows/ci.yml/badge.svg)
 [![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/NASA-AMMOS/aerie-ampcs.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/NASA-AMMOS/aerie-ampcs/context:javascript)
+[![npm version](https://img.shields.io/npm/v/@nasa-jpl/aerie-ampcs.svg)](https://www.npmjs.com/package/@nasa-jpl/aerie-ampcs)
 
 # @nasa-jpl/aerie-ampcs
 
@@ -23,9 +24,8 @@ import { parse } from '@nasa-jpl/aerie-ampcs';
 const xml = `
   <?xml version='1.0' encoding='UTF-8'?>
   <command_dictionary>
-    <header mission_name="" schema_version="" version="" />
+    <header mission_name="GENERIC" spacecraft_id="42" schema_version="5.0" version="2022-001T00:00:00.000" />
     <command_definitions>
-      ...
     </command_definitions>
   </command_dictionary>
 `;
