@@ -1,4 +1,5 @@
 ![ci](https://github.com/NASA-AMMOS/aerie-ampcs/actions/workflows/ci.yml/badge.svg)
+[![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/NASA-AMMOS/aerie-ampcs.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/NASA-AMMOS/aerie-ampcs/context:javascript)
 
 # @nasa-jpl/aerie-ampcs
 
