@@ -1,3 +1,5 @@
+![ci](https://github.com/NASA-AMMOS/aerie-ampcs/actions/workflows/ci.yml/badge.svg)
+
 # @nasa-jpl/aerie-ampcs
 
 This package contains utility functions to convert a standard XML AMPCS command dictionary to JavaScript.
