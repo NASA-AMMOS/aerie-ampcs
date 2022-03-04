@@ -1,0 +1,19 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16.14.0'
+      - name: Install Dependencies
+        run: npm install
+      - name: Test
+        run: npm test
