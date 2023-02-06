@@ -29,4 +29,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Test Results
-          path: '/home/runner/work/aerie-ampcs/aerie-ampcs/test-report'
+          path: ${{ github.workspace }}/test-report
