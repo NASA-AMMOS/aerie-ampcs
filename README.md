@@ -1,5 +1,3 @@
-![ci](https://github.com/NASA-AMMOS/aerie-ampcs/actions/workflows/ci.yml/badge.svg)
-[![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/NASA-AMMOS/aerie-ampcs.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/NASA-AMMOS/aerie-ampcs/context:javascript)
 [![npm version](https://img.shields.io/npm/v/@nasa-jpl/aerie-ampcs.svg)](https://www.npmjs.com/package/@nasa-jpl/aerie-ampcs)
 
 # @nasa-jpl/aerie-ampcs
@@ -8,7 +6,7 @@ This package contains utility functions to convert a standard XML AMPCS command 
 
 ## Install
 
-```bash
+```sh
 npm install @nasa-jpl/aerie-ampcs --save
 ```
 
