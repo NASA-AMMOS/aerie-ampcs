@@ -18,7 +18,7 @@
     "clean": "rm -rf dist",
     "format": "prettier --write ./src",
     "prepublishOnly": "npm run build",
-    "test": "npm run build && mocha src/index.test.js"
+    "test": "npm run build && mocha --reporter mochawesome --reporter-options reportDir=test-report,reportFilename=test-report src/index.test.js"
   },
   "dependencies": {
     "xml-js": "^1.6.11"
@@ -27,6 +27,7 @@
     "@types/mocha": "^10.0.1",
     "@types/node": "^18.11.19",
     "mocha": "^10.2.0",
+    "mochawesome": "^7.1.3",
     "prettier": "^2.8.3",
     "typescript": "^4.9.5"
   }
