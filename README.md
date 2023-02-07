@@ -2,7 +2,7 @@
 
 # @nasa-jpl/aerie-ampcs
 
-This package contains utility functions to convert a standard XML AMPCS command dictionary to JavaScript.
+This package contains utility functions to convert a standard XML [AMPCS command dictionary](https://github.com/NASA-AMMOS/ampcs-dict-schemas/blob/main/CommandDictionary.rnc) to JavaScript.
 
 ## Install
 
