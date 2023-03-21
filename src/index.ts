@@ -430,7 +430,8 @@ export function parse(
   xml: string,
   path: string | null = null,
 ): CommandDictionary {
-  const { elements } = xml2js(xml);
+  const options = { ignoreComment: true };
+  const { elements } = xml2js(xml, options);
   const [commandDictionary] = elements;
 
   const header: Header = {
