@@ -6,7 +6,9 @@ describe('@nasa-jpl/aerie-ampcs', () => {
     it('header', () => {
       const xml = `
         <?xml version='1.0' encoding='UTF-8'?>
+        <!-- comment -->
         <command_dictionary>
+          <!-- comment -->
           <header mission_name="GENERIC" spacecraft_id="42" schema_version="5.0" version="2022-001T00:00:00.000" />
         </command_dictionary>
       `;
@@ -35,15 +37,20 @@ describe('@nasa-jpl/aerie-ampcs', () => {
     it('enum_definitions', () => {
       const xml = `
         <?xml version='1.0' encoding='UTF-8'?>
+        <!-- comment -->
         <command_dictionary>
           <enum_definitions>
+            <!-- comment -->
             <enum_table name="SomeEnum">
               <values>
+                <!-- comment -->
                 <enum symbol="ON" numeric="1" />
+                <!-- comment -->
                 <enum symbol="OFF" numeric="0" />
               </values>
             </enum_table>
             <enum_table name="SomeOtherEnum">
+            <!-- comment -->
               <values>
                 <enum symbol="CLEAR_A" numeric="1"/>
                 <enum symbol="CLEAR_B" numeric="2"/>
@@ -142,13 +149,18 @@ describe('@nasa-jpl/aerie-ampcs', () => {
         <command_dictionary>
           <command_definitions>
             <hw_command opcode="" stem="HDW_CMD_0">
+              <!-- comment -->
               <categories>
+                <!-- comment -->
                 <category name="module" value="n/a" />
               </categories>
+              <!-- comment -->
               <description><![CDATA[Does something interesting.]]></description>
+              <!-- comment -->
             </hw_command>
             <hw_command opcode="" stem="HDW_CMD_1">
               <categories>
+                <!-- comment -->
                 <ops_category>ABC</ops_category>
               </categories>
               <description>Does something else interesting.</description>
@@ -202,12 +214,17 @@ describe('@nasa-jpl/aerie-ampcs', () => {
           <command_definitions>
             <fsw_command opcode="" stem="FSW_CMD_0">
               <arguments>
+                <!-- comment -->
                 <enum_arg name="enum_arg_0" bit_length="8" enum_name="SomeEnum" default_value="ON" />
+                <!-- comment -->
                 <boolean_arg name="boolean_arg_0" bit_length="8" default_value="FALSE">
+                  <!-- comment -->
                   <boolean_format true_str="TRUE" false_str="FALSE" />
                 </boolean_arg>
                 <numeric_arg name="numeric_arg_0" type="float" bit_length="64" units="none" default_value="1">
+                  <!-- comment -->
                   <range_of_values>
+                    <!-- comment -->
                     <include min="0.001" max="1.0001" />
                   </range_of_values>
                   <description>This is a description of numeric_arg_0</description>
@@ -323,22 +340,27 @@ describe('@nasa-jpl/aerie-ampcs', () => {
           <command_definitions>
             <fsw_command opcode="" stem="FSW_CMD_1" class="FSW">
               <arguments>
+                <!-- comment -->
                 <float_arg name="float_arg_0" bit_length="64" units="None">
                   <description>Some float argument.</description>
                 </float_arg>
+                <!-- comment -->
                 <integer_arg name="integer_arg_0" bit_length="8" units="None">
                   <range_of_values>
                     <include min="-1" max="32"/>
                   </range_of_values>
                   <description>Some integer arg.</description>
                 </integer_arg>
+                <!-- comment -->
                 <repeat_arg name="repeat_arg_0" prefix_bit_length="8">
                   <description>Some repeat argument.</description>
                   <repeat min="1" max="10">
                     <arguments>
+                      <!-- comment -->
                       <enum_arg name="enum_arg_0" bit_length="8" enum_name="SomeEnum">
                         <description>Some repeated enum argument.</description>
                       </enum_arg>
+                      <!-- comment -->
                       <unsigned_arg name="unsigned_arg_0" bit_length="16" units="index">
                         <range_of_values>
                           <include min="0" max="3999"/>
@@ -348,6 +370,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
                     </arguments>
                   </repeat>
                 </repeat_arg>
+                <!-- comment -->
                 <time_arg name="time_arg_0" bit_length="32" units="SCLK">
                   <description><![CDATA[Some time argument.]]></description>
                 </time_arg>
