@@ -1,4 +1,4 @@
-import { xml2js } from 'xml-js';
+import { type Options, xml2js } from 'xml-js';
 
 export function toNumber(val: string): number | null {
   const number = parseFloat(val);
@@ -429,8 +429,8 @@ export function parseArguments(element: any): {
 export function parse(
   xml: string,
   path: string | null = null,
+  options: Options.XML2JS = { ignoreComment: true },
 ): CommandDictionary {
-  const options = { ignoreComment: true };
   const { elements } = xml2js(xml, options);
   const [commandDictionary] = elements;
 
