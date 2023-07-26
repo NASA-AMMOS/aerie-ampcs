@@ -184,20 +184,24 @@ describe('@nasa-jpl/aerie-ampcs', () => {
           HDW_CMD_0: {
             description: 'Does something interesting.',
             stem: 'HDW_CMD_0',
+            type: 'hw_command',
           },
           HDW_CMD_1: {
             description: 'Does something else interesting.',
             stem: 'HDW_CMD_1',
+            type: 'hw_command',
           },
         },
         hwCommands: [
           {
             description: 'Does something interesting.',
             stem: 'HDW_CMD_0',
+            type: 'hw_command',
           },
           {
             description: 'Does something else interesting.',
             stem: 'HDW_CMD_1',
+            type: 'hw_command',
           },
         ],
         id: '--',
@@ -308,6 +312,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
             arguments: args,
             description: 'Does something interesting to the spacecraft.',
             stem: 'FSW_CMD_0',
+            type: 'fsw_command',
           },
         },
         fswCommands: [
@@ -316,6 +321,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
             arguments: args,
             description: 'Does something interesting to the spacecraft.',
             stem: 'FSW_CMD_0',
+            type: 'fsw_command',
           },
         ],
         header: {
@@ -594,6 +600,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
             arguments: args,
             description: 'This command does something interesting.',
             stem: 'FSW_CMD_1',
+            type: 'fsw_command',
           },
         },
         fswCommands: [
@@ -602,6 +609,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
             arguments: args,
             description: 'This command does something interesting.',
             stem: 'FSW_CMD_1',
+            type: 'fsw_command',
           },
         ],
         header: {
@@ -845,6 +853,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
             ],
             description: 'Does something interesting to the spacecraft.',
             stem: 'FSW_CMD_0',
+            type: 'fsw_command',
           },
           FSW_CMD_1: {
             argumentMap: {
@@ -1041,6 +1050,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
             ],
             description: 'This command does something interesting.',
             stem: 'FSW_CMD_1',
+            type: 'fsw_command',
           },
         },
         fswCommands: [
@@ -1105,6 +1115,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
             ],
             description: 'Does something interesting to the spacecraft.',
             stem: 'FSW_CMD_0',
+            type: 'fsw_command',
           },
           {
             argumentMap: {
@@ -1301,6 +1312,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
             ],
             description: 'This command does something interesting.',
             stem: 'FSW_CMD_1',
+            type: 'fsw_command',
           },
         ],
         header: {
@@ -1313,20 +1325,24 @@ describe('@nasa-jpl/aerie-ampcs', () => {
           HDW_CMD_0: {
             description: 'Does something interesting.',
             stem: 'HDW_CMD_0',
+            type: 'hw_command',
           },
           HDW_CMD_1: {
             description: 'Does something else interesting.',
             stem: 'HDW_CMD_1',
+            type: 'hw_command',
           },
         },
         hwCommands: [
           {
             description: 'Does something interesting.',
             stem: 'HDW_CMD_0',
+            type: 'hw_command',
           },
           {
             description: 'Does something else interesting.',
             stem: 'HDW_CMD_1',
+            type: 'hw_command',
           },
         ],
         id: 'GENERIC-2022-001T00:00:00.000-5.0',
