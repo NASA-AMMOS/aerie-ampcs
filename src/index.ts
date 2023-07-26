@@ -1,4 +1,4 @@
-import { type Options, xml2js } from 'xml-js';
+import { xml2js, type Options } from 'xml-js';
 
 export function toNumber(val: string): number | null {
   const number = parseFloat(val);
@@ -152,6 +152,7 @@ export type FswCommand = {
   arguments: FswCommandArgument[];
   description: string;
   stem: string;
+  type: 'fsw_command';
 };
 
 export type FswCommandMap = { [stem: string]: FswCommand };
@@ -159,6 +160,7 @@ export type FswCommandMap = { [stem: string]: FswCommand };
 export type HwCommand = {
   description: string;
   stem: string;
+  type: 'hw_command';
 };
 
 export type HwCommandMap = { [stem: string]: HwCommand };
@@ -528,6 +530,7 @@ export function parse(
               arguments: commandArguments,
               description: commandDescription,
               stem: commandStem,
+              type: 'fsw_command',
             };
             fswCommandMap[commandStem] = fswCommand;
             fswCommands.push(fswCommand);
@@ -559,6 +562,7 @@ export function parse(
             const hwCommand: HwCommand = {
               description: commandDescription,
               stem: commandStem,
+              type: 'hw_command',
             };
             hwCommandMap[commandStem] = hwCommand;
             hwCommands.push(hwCommand);

@@ -1,7 +1,7 @@
 {
   "name": "@nasa-jpl/aerie-ampcs",
   "description": "Utility functions to convert a standard XML AMPCS command dictionary to JavaScript.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "license": "MIT",
   "repository": {
