@@ -1,5 +1,5 @@
 import { deepStrictEqual } from 'assert';
-import { parse } from '../dist/index.js';
+import { parse, parseParameterDictionary } from '../dist/index.js';
 
 describe('@nasa-jpl/aerie-ampcs', () => {
   describe('parse', () => {
@@ -22,7 +22,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
         header: {
           mission_name: 'GENERIC',
           schema_version: '5.0',
-          spacecraft_id: '42',
+          spacecraft_ids: [42],
           version: '2022-001T00:00:00.000',
         },
         hwCommandMap: {},
@@ -131,7 +131,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
         header: {
           mission_name: '',
           schema_version: '',
-          spacecraft_id: '',
+          spacecraft_ids: [],
           version: '',
         },
         hwCommandMap: {},
@@ -177,7 +177,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
         header: {
           mission_name: '',
           schema_version: '',
-          spacecraft_id: '',
+          spacecraft_ids: [],
           version: '',
         },
         hwCommandMap: {
@@ -327,7 +327,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
         header: {
           mission_name: '',
           schema_version: '',
-          spacecraft_id: '',
+          spacecraft_ids: [],
           version: '',
         },
         hwCommandMap: {},
@@ -615,7 +615,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
         header: {
           mission_name: '',
           schema_version: '',
-          spacecraft_id: '',
+          spacecraft_ids: [],
           version: '',
         },
         hwCommandMap: {},
@@ -1318,7 +1318,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
         header: {
           mission_name: 'GENERIC',
           schema_version: '5.0',
-          spacecraft_id: '42',
+          spacecraft_ids: [42],
           version: '2022-001T00:00:00.000',
         },
         hwCommandMap: {
@@ -1349,6 +1349,283 @@ describe('@nasa-jpl/aerie-ampcs', () => {
         path: null,
       };
       const result = parse(xml);
+      deepStrictEqual(result, expected);
+    });
+  });
+
+  describe('parse parameter dictionary', () => {
+    it('header, enum, groups, param', () => {
+      const path = '/dev/null';
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<param-def>
+  <header mission_name="SPACE_MISSION" version="1.2.3.4" schema_version="1.0">
+    <spacecraft_ids>
+      <spacecraft_id value="1"/>
+    </spacecraft_ids>
+  </header>
+  <enum_definitions>
+    <enum_table name="SomeOtherEnum">
+    <!-- comment -->
+      <values>
+        <enum symbol="CLEAR_A" numeric="1"/>
+        <enum symbol="CLEAR_B" numeric="2"/>
+        <enum symbol="CLEAR_C" numeric="3"/>
+      </values>
+    </enum_table>
+  </enum_definitions>
+  <parameter_groups>
+    <parameter_group param_group_name="TEST_GROUP_1" group_desc="My first test group">
+      <group_params>
+        <group_param>TEST_WARMUP_DURATION</group_param>
+        <group_param>TEST_COOLDOWN_DURATION</group_param>
+        <group_param>TEST_POWER_CYCLE_DURATION</group_param>
+      </group_params>
+    </parameter_group>
+  </parameter_groups>
+  <param param_id="0x000000F0" param_name="TEST_WARMUP_DURATION" parameter_version="1" units="Seconds" location="FILE" managed_by="Test">
+    <sysdesc>A description of the system</sysdesc>
+    <when_applied applied="IMMEDIATELY"/>
+    <categories>
+      <module>test_mod</module>
+      <ops_category>SAMPLE</ops_category>
+    </categories>
+    <parameter_type>
+      <unsigned_int_param bit_length="32">
+        <range_of_values>
+          <include min="0" max="3600"/>
+        </range_of_values>
+      </unsigned_int_param>
+    </parameter_type>
+    <param_validation custom_validation_required="No"/>
+    <default_value>1200</default_value>
+    <rationale>2 minutes, longer would be too long</rationale>
+  </param>
+</param-def>
+
+      `;
+      /** @type import('./index').ParameterDictionary} */
+      const expected = {
+        enumMap: {
+          SomeOtherEnum: {
+            name: 'SomeOtherEnum',
+            values: [
+              {
+                numeric: 1,
+                symbol: 'CLEAR_A',
+              },
+              {
+                numeric: 2,
+                symbol: 'CLEAR_B',
+              },
+              {
+                numeric: 3,
+                symbol: 'CLEAR_C',
+              },
+            ],
+          },
+        },
+        enums: [
+          {
+            name: 'SomeOtherEnum',
+            values: [
+              {
+                numeric: 1,
+                symbol: 'CLEAR_A',
+              },
+              {
+                numeric: 2,
+                symbol: 'CLEAR_B',
+              },
+              {
+                numeric: 3,
+                symbol: 'CLEAR_C',
+              },
+            ],
+          },
+        ],
+        header: {
+          mission_name: 'SPACE_MISSION',
+          schema_version: '1.0',
+          spacecraft_ids: [1],
+          version: '1.2.3.4',
+        },
+        paramMap: {
+          TEST_WARMUP_DURATION: {
+            bit_length: 32,
+            default_value: 1200,
+            param_id: 240,
+            param_name: 'TEST_WARMUP_DURATION',
+            param_type: 'unsigned_int_param',
+            parameter_group: 'TEST_GROUP_1',
+            parameter_version: 1,
+            range: {
+              max: 3600,
+              min: 0,
+            },
+            units: 'Seconds',
+          },
+        },
+        params: [
+          {
+            bit_length: 32,
+            default_value: 1200,
+            param_id: 240,
+            param_name: 'TEST_WARMUP_DURATION',
+            param_type: 'unsigned_int_param',
+            parameter_group: 'TEST_GROUP_1',
+            parameter_version: 1,
+            range: {
+              max: 3600,
+              min: 0,
+            },
+            units: 'Seconds',
+          },
+        ],
+        id: 'SPACE_MISSION-1.2.3.4-1.0',
+        path: '/dev/null',
+      };
+
+      const result = parseParameterDictionary(xml, path);
+      deepStrictEqual(result, expected);
+    });
+
+    it('enum param', () => {
+      const path = '/dev/null';
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<param-def>
+  <header mission_name="SPACE_MISSION" version="1.2.3.4" schema_version="1.0">
+    <spacecraft_ids>
+      <spacecraft_id value="1"/>
+    </spacecraft_ids>
+  </header>
+  <enum_definitions>
+    <enum_table name="example_enab">
+      <values>
+        <enum symbol="DISABLE" numeric="0"/>
+        <enum symbol="ENABLE" numeric="1"/>
+      </values>
+    </enum_table>
+  </enum_definitions>
+  <param param_id="0x000000FF" param_name="EXAMPLE_ENUM_PARAM_NAME" parameter_version="1" location="NPM" managed_by="Ground">
+    <sysdesc>Sample sysdesc</sysdesc>
+    <when_applied applied="IMMEDIATELY"/>
+    <categories>
+      <module>exp_mod</module>
+      <ops_category>EXAMPLE</ops_category>
+    </categories>
+    <parameter_type>
+      <enum_param bit_length="8" enum_name="example_enab">
+        <range_of_values>
+          <include min="0" max="1"/>
+        </range_of_values>
+      </enum_param>
+    </parameter_type>
+    <param_validation custom_validation_required="No"/>
+    <default_value>ENABLE</default_value>
+    <rationale>emphatic assertion</rationale>
+  </param>
+</param-def>
+`;
+      const expected = {
+        bit_length: 8,
+        default_value: 'ENABLE',
+        enum_type: {
+          name: 'example_enab',
+          values: [
+            {
+              numeric: 0,
+              symbol: 'DISABLE',
+            },
+            {
+              numeric: 1,
+              symbol: 'ENABLE',
+            },
+          ],
+        },
+        param_name: 'EXAMPLE_ENUM_PARAM_NAME',
+        param_type: 'enum_param',
+        parameter_group: '',
+        parameter_version: 1,
+        range: {
+          max: 1,
+          min: 0,
+        },
+        param_id: 255,
+        units: '',
+      };
+      const result = parseParameterDictionary(xml, path);
+
+      deepStrictEqual(result.params[0], expected);
+    });
+
+    it('string param', () => {
+      const path = '/dev/null';
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<param-def>
+  <parameter_groups>
+      <parameter_group param_group_name="GROUP_1">
+        <group_params>
+          <group_param>PARAM2</group_param>
+        </group_params>
+      </parameter_group>
+      <parameter_group param_group_name="GROUP_2">
+      <group_params>
+        <group_param>PARAM3</group_param>
+        <group_param>EXAMPLE_STR_PARAM</group_param>
+      </group_params>
+    </parameter_group>
+  </parameter_groups>
+  <param param_id="0xFEEDFEED" param_name="EXAMPLE_STR_PARAM" parameter_version="1" location="NPM" managed_by="Unit tests">
+  <sysdesc>The maximum string length is 127 ASCII characters</sysdesc>
+  <when_applied applied="IMMEDIATELY"/>
+  <categories>
+    <module>test_mod</module>
+    <ops_category>NA</ops_category>
+  </categories>
+  <parameter_type>
+    <string_param max_bit_length="1016"/>
+  </parameter_type>
+  <param_validation custom_validation_required="No"/>
+  <default_value>/file/path</default_value>
+  <rationale>configure behavior</rationale>
+  </param>
+</param-def>`;
+      const expected = {
+        enumMap: {},
+        enums: [],
+        header: {
+          mission_name: '',
+          schema_version: '',
+          spacecraft_ids: [],
+          version: '',
+        },
+        id: '--',
+        paramMap: {
+          EXAMPLE_STR_PARAM: {
+            default_value: '/file/path',
+            max_bit_length: 1016,
+            param_id: 0xfeedfeed,
+            param_name: 'EXAMPLE_STR_PARAM',
+            param_type: 'string_param',
+            parameter_group: 'GROUP_2',
+            parameter_version: 1,
+          },
+        },
+        params: [
+          {
+            default_value: '/file/path',
+            max_bit_length: 1016,
+            param_id: 0xfeedfeed,
+            param_name: 'EXAMPLE_STR_PARAM',
+            param_type: 'string_param',
+            parameter_group: 'GROUP_2',
+            parameter_version: 1,
+          },
+        ],
+        path: '/dev/null',
+      };
+      const result = parseParameterDictionary(xml, path);
+
       deepStrictEqual(result, expected);
     });
   });

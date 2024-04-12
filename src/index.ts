@@ -1,4 +1,4 @@
-import { xml2js, type Options } from 'xml-js';
+import { Element, xml2js, type Options } from 'xml-js';
 
 export function toNumber(val: string): number | null {
   const number = parseFloat(val);
@@ -131,7 +131,7 @@ export type FswCommandArgumentMap = { [name: string]: FswCommandArgument };
 export type Header = {
   mission_name: string;
   schema_version: string;
-  spacecraft_id: string;
+  spacecraft_ids: number[];
   version: string;
 };
 
@@ -175,6 +175,74 @@ export type CommandDictionary = {
   hwCommands: HwCommand[];
   id: string;
   path: string | null;
+};
+
+export type Parameter =
+  | ParameterEnum
+  | ParameterFloat
+  | ParameterInteger
+  | ParameterString
+  | ParameterUnsigned;
+
+type ParameterBase = {
+  param_id: number;
+  param_name: string;
+  parameter_version: number | null;
+  parameter_group: string;
+  bit_length: number | null;
+};
+
+type ParameterNumber = Pick<
+  FswCommandArgumentInteger,
+  'default_value' | 'range' | 'units'
+> &
+  ParameterBase;
+
+export type ParameterFloat = ParameterNumber & {
+  param_type: 'float_param';
+};
+
+export type ParameterUnsigned = ParameterNumber & {
+  param_type: 'unsigned_int_param';
+};
+
+export type ParameterInteger = ParameterNumber & {
+  param_type: 'integer_param';
+};
+
+export type ParameterString = Omit<ParameterBase, 'bit_length'> &
+  Pick<FswCommandArgumentVarString, 'default_value'> & {
+    param_type: 'string_param';
+    max_bit_length: number;
+  };
+
+export type ParameterEnum = ParameterBase &
+  Pick<FswCommandArgumentEnum, 'default_value'> &
+  // schema shows enums with min/max having type normalizedString
+  // however dictionaries use numerics
+  Pick<FswCommandArgumentInteger, 'range'> & {
+    param_type: 'enum_param';
+    enum_type: Enum;
+    units: string;
+  };
+
+export type ParamMap = { [stem: string]: Parameter };
+
+type ParameterGroup = {
+  param_group_name: string;
+  group_params_names: string[];
+};
+
+type ParameterNameToGroupMap = {
+  [param_name: string]: ParameterGroup;
+};
+
+export type ParameterDictionary = Pick<
+  CommandDictionary,
+  'enumMap' | 'enums' | 'header' | 'id' | 'path'
+> & {
+  params: Parameter[];
+  paramMap: ParamMap;
 };
 
 export function parseArguments(element: any): {
@@ -436,10 +504,10 @@ export function parse(
   const { elements } = xml2js(xml, options);
   const [commandDictionary] = elements;
 
-  const header: Header = {
+  let header: Header = {
     mission_name: '',
     schema_version: '',
-    spacecraft_id: '',
+    spacecraft_ids: [],
     version: '',
   };
   const enumMap: EnumMap = {};
@@ -456,11 +524,7 @@ export function parse(
     for (const commandDictionaryElement of commandDictionary.elements) {
       // Header.
       if (commandDictionaryElement?.name === 'header') {
-        const { attributes } = commandDictionaryElement;
-        header.mission_name = attributes.mission_name || '';
-        header.schema_version = attributes.schema_version || '';
-        header.spacecraft_id = attributes.spacecraft_id || '';
-        header.version = attributes.version || '';
+        header = parseHeader(commandDictionaryElement);
       }
 
       // Enum Definitions.
@@ -585,5 +649,266 @@ export function parse(
     hwCommands,
     id,
     path,
+  };
+}
+
+function parseHeader(headerElement): Header {
+  const { attributes } = headerElement;
+  let spacecraft_ids: Header['spacecraft_ids'] = [];
+  if (attributes.spacecraft_id) {
+    spacecraft_ids = [toNumber(attributes.spacecraft_id)!];
+  } else {
+    spacecraft_ids =
+      headerElement?.elements
+        .find(el => el.name === 'spacecraft_ids')
+        ?.elements.filter(el => el.name === 'spacecraft_id')
+        .map(el => toNumber(el.attributes.value)) ?? [];
+  }
+  return {
+    mission_name: attributes.mission_name ?? '',
+    schema_version: attributes.schema_version ?? '',
+    spacecraft_ids,
+    version: attributes.version ?? '',
+  };
+}
+
+function parseEnum(enumTable): Enum {
+  const { name = '' } = enumTable.attributes;
+  const [{ elements: valueElements }] = enumTable.elements;
+  const values: EnumValue[] = [];
+
+  for (const valueElement of valueElements) {
+    const { symbol = '', numeric = null } = valueElement.attributes;
+    values.push({ symbol, numeric: toNumber(numeric) });
+  }
+
+  return { name, values };
+}
+
+function parseParam(
+  paramElement: Element,
+  enumMap: EnumMap,
+  paramNameToGroupMap: ParameterNameToGroupMap,
+): Parameter | null {
+  const { attributes: attrs } = paramElement;
+  const param_id = parseInt(attrs?.param_id as string, 16);
+  const param_name = (attrs?.param_name as string) ?? '';
+  const parameter_version = toNumber(attrs?.parameter_version as string);
+  const units = (attrs?.units as string) ?? '';
+  // not all parameters are in a group
+  const parameter_group =
+    paramNameToGroupMap[param_name]?.param_group_name ?? '';
+  let bit_length: ParameterBase['bit_length'] = null;
+  let max_bit_length: ParameterString['max_bit_length'] = NaN;
+  let enum_name: string | null = null;
+
+  const paramBase = {
+    param_id,
+    param_name,
+    parameter_group,
+    parameter_version,
+  };
+
+  if (paramElement.elements && paramElement.elements.length) {
+    let param_type = '';
+    let range: ParameterNumber['range'] = null;
+    for (const valueElement of paramElement.elements) {
+      if (valueElement.name === 'parameter_type') {
+        const paramTypeChild = valueElement.elements![0];
+        param_type = paramTypeChild.name!;
+        bit_length = toNumber(paramTypeChild.attributes?.bit_length as string);
+        max_bit_length = toNumber(
+          paramTypeChild.attributes?.max_bit_length as string,
+        )!;
+        if (param_type === 'enum_param') {
+          enum_name = paramTypeChild.attributes?.enum_name as string;
+        }
+
+        for (const paramChildElement of paramTypeChild.elements ?? []) {
+          if (paramChildElement.name === 'range_of_values') {
+            if (
+              param_type === 'enum_param' ||
+              param_type === 'unsigned_int_param' ||
+              param_type === 'integer_param' ||
+              param_type === 'float_param'
+            ) {
+              const [{ attributes }] = paramChildElement.elements!;
+              if (attributes) {
+                const min = toNumber(attributes.min as string);
+                const max = toNumber(attributes.max as string);
+                if (min !== null && max !== null) {
+                  range = { min, max };
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    if (
+      param_type === 'unsigned_int_param' ||
+      param_type === 'float_param' ||
+      param_type === 'integer_param'
+    ) {
+      let default_value: ParameterNumber['default_value'] = null;
+      for (const valueElement of paramElement.elements) {
+        if (valueElement.name === 'default_value') {
+          default_value = toNumber(valueElement?.elements![0].text as string)!;
+        }
+      }
+      return {
+        ...paramBase,
+        bit_length,
+        param_type,
+        range,
+        units,
+        default_value,
+      };
+    } else if (param_type === 'string_param') {
+      let default_value: ParameterString['default_value'] = null;
+      for (const valueElement of paramElement.elements) {
+        if (valueElement.name === 'default_value') {
+          default_value = valueElement?.elements![0].text as string;
+        }
+      }
+      return {
+        ...paramBase,
+        param_type,
+        max_bit_length,
+        default_value,
+      };
+    } else if (param_type === 'enum_param') {
+      let default_value: ParameterEnum['default_value'] = null;
+      let enum_type: Enum = enumMap[enum_name!];
+      for (const valueElement of paramElement.elements) {
+        if (valueElement.name === 'default_value') {
+          const defaultValueSymbol = valueElement.elements![0].text as string;
+          default_value =
+            enum_type.values.find(ev => ev.symbol === defaultValueSymbol)
+              ?.symbol ?? null;
+        }
+      }
+      return {
+        ...paramBase,
+        bit_length,
+        param_type,
+        range,
+        units,
+        default_value,
+        enum_type,
+      };
+    } else {
+      console.log(`Unknown parameter type ${param_type}`);
+    }
+  }
+
+  return null;
+}
+
+export function parseParameterDictionary(
+  xml: string,
+  path: string | null = null,
+  options: Options.XML2JS = { ignoreComment: true },
+): ParameterDictionary {
+  const { elements } = xml2js(xml, options);
+  const [parameterDictionary] = elements;
+
+  let header: Header = {
+    mission_name: '',
+    schema_version: '',
+    spacecraft_ids: [],
+    version: '',
+  };
+  const enumMap: EnumMap = {};
+  const enums: Enum[] = [];
+  const params: Parameter[] = [];
+  const paramMap: ParamMap = {};
+  const paramNameToGroupMap: ParameterNameToGroupMap = {};
+
+  if (
+    parameterDictionary?.name === 'param-def' &&
+    parameterDictionary?.elements?.length
+  ) {
+    for (const parameterDictionaryElement of parameterDictionary.elements) {
+      // Header.
+      if (parameterDictionaryElement.name === 'header') {
+        header = parseHeader(parameterDictionaryElement);
+      }
+
+      // Enum Definitions.
+      if (
+        parameterDictionaryElement.name === 'enum_definitions' &&
+        parameterDictionaryElement.elements?.length
+      ) {
+        for (const enumTable of parameterDictionaryElement.elements) {
+          const enumeration: Enum = parseEnum(enumTable);
+          enumMap[enumeration.name] = enumeration;
+          enums.push(enumeration);
+        }
+      }
+
+      // Parameter Groups.
+      if (
+        parameterDictionaryElement.name === 'parameter_groups' &&
+        parameterDictionaryElement.elements?.length
+      ) {
+        for (const parameterGroupElement of parameterDictionaryElement.elements) {
+          if (
+            parameterGroupElement.name === 'parameter_group' &&
+            parameterGroupElement.elements?.length
+          ) {
+            const param_group_name =
+              parameterGroupElement.attributes.param_group_name;
+            const group_params_names: ParameterGroup['group_params_names'] = [];
+            for (const group_params of parameterGroupElement.elements) {
+              if (
+                group_params.name === 'group_params' &&
+                group_params.elements?.length
+              ) {
+                for (const group_param of group_params.elements) {
+                  const group_param_name = group_param.elements[0].text;
+                  if (typeof group_param_name === 'string') {
+                    group_params_names.push(group_param_name);
+                  }
+                }
+              }
+            }
+            const paramGroup: ParameterGroup = {
+              param_group_name,
+              group_params_names,
+            };
+            paramGroup.group_params_names.forEach(
+              param_name => (paramNameToGroupMap[param_name] = paramGroup),
+            );
+          }
+        }
+      }
+    }
+
+    for (const parameterDictionaryElement of parameterDictionary.elements) {
+      // param
+      if (parameterDictionaryElement?.name === 'param') {
+        const param = parseParam(
+          parameterDictionaryElement,
+          enumMap,
+          paramNameToGroupMap,
+        );
+        if (param) {
+          paramMap[param.param_name] = param;
+          params.push(param);
+        }
+      }
+    }
+  }
+
+  const id = `${header.mission_name}-${header.version}-${header.schema_version}`;
+  return {
+    id,
+    enumMap,
+    enums,
+    path,
+    header,
+    params,
+    paramMap,
   };
 }
