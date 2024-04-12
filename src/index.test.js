@@ -1376,13 +1376,13 @@ describe('@nasa-jpl/aerie-ampcs', () => {
   <parameter_groups>
     <parameter_group param_group_name="TEST_GROUP_1" group_desc="My first test group">
       <group_params>
-        <group_param>CB_CONFIG_1_DOWNLINK_BAND</group_param>
-        <group_param>CB_CONFIG_1_RADIO_MODE</group_param>
-        <group_param>CB_CONFIG_1_PRIME_RADIO_ANTENNA_PATH</group_param>
+        <group_param>TEST_WARMUP_DURATION</group_param>
+        <group_param>TEST_COOLDOWN_DURATION</group_param>
+        <group_param>TEST_POWER_CYCLE_DURATION</group_param>
       </group_params>
     </parameter_group>
   </parameter_groups>
-  <param param_id="0x020A0000" param_name="TEST_WARM_DURATION" parameter_version="1" units="Seconds" location="FILE" managed_by="Test">
+  <param param_id="0x000000F0" param_name="TEST_WARMUP_DURATION" parameter_version="1" units="Seconds" location="FILE" managed_by="Test">
     <sysdesc>A description of the system</sysdesc>
     <when_applied applied="IMMEDIATELY"/>
     <categories>
@@ -1450,13 +1450,13 @@ describe('@nasa-jpl/aerie-ampcs', () => {
           version: '1.2.3.4',
         },
         paramMap: {
-          TEST_WARM_DURATION: {
+          TEST_WARMUP_DURATION: {
             bit_length: 32,
             default_value: 1200,
-            param_id: 0,
-            param_name: 'TEST_WARM_DURATION',
+            param_id: 240,
+            param_name: 'TEST_WARMUP_DURATION',
             param_type: 'unsigned_int_param',
-            parameter_group: '',
+            parameter_group: 'TEST_GROUP_1',
             parameter_version: 1,
             range: {
               max: 3600,
@@ -1469,10 +1469,10 @@ describe('@nasa-jpl/aerie-ampcs', () => {
           {
             bit_length: 32,
             default_value: 1200,
-            param_id: 0,
-            param_name: 'TEST_WARM_DURATION',
+            param_id: 240,
+            param_name: 'TEST_WARMUP_DURATION',
             param_type: 'unsigned_int_param',
-            parameter_group: '',
+            parameter_group: 'TEST_GROUP_1',
             parameter_version: 1,
             range: {
               max: 3600,
@@ -1506,7 +1506,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
       </values>
     </enum_table>
   </enum_definitions>
-  <param param_id="0x0E0F000B" param_name="EXAMPLE_ENUM_PARAM_NAME" parameter_version="1" location="NPM" managed_by="Ground">
+  <param param_id="0x000000FF" param_name="EXAMPLE_ENUM_PARAM_NAME" parameter_version="1" location="NPM" managed_by="Ground">
     <sysdesc>Sample sysdesc</sysdesc>
     <when_applied applied="IMMEDIATELY"/>
     <categories>
@@ -1546,7 +1546,11 @@ describe('@nasa-jpl/aerie-ampcs', () => {
         param_type: 'enum_param',
         parameter_group: '',
         parameter_version: 1,
-        param_id: 0,
+        range: {
+          max: 1,
+          min: 0,
+        },
+        param_id: 255,
         units: '',
       };
       const result = parseParameterDictionary(xml, path);
@@ -1557,7 +1561,6 @@ describe('@nasa-jpl/aerie-ampcs', () => {
     it('string param', () => {
       const path = '/dev/null';
       const xml = `<?xml version="1.0" encoding="UTF-8"?>
-
 <param-def>
   <parameter_groups>
       <parameter_group param_group_name="GROUP_1">
@@ -1572,7 +1575,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
       </group_params>
     </parameter_group>
   </parameter_groups>
-  <param param_id="0xFEEDBEEF" param_name="EXAMPLE_STR_PARAM" parameter_version="1" location="NPM" managed_by="Unit tests">
+  <param param_id="0xFEEDFEED" param_name="EXAMPLE_STR_PARAM" parameter_version="1" location="NPM" managed_by="Unit tests">
   <sysdesc>The maximum string length is 127 ASCII characters</sysdesc>
   <when_applied applied="IMMEDIATELY"/>
   <categories>
@@ -1601,7 +1604,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
           EXAMPLE_STR_PARAM: {
             default_value: '/file/path',
             max_bit_length: 1016,
-            param_id: 0,
+            param_id: 0xfeedfeed,
             param_name: 'EXAMPLE_STR_PARAM',
             param_type: 'string_param',
             parameter_group: 'GROUP_2',
@@ -1612,7 +1615,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
           {
             default_value: '/file/path',
             max_bit_length: 1016,
-            param_id: 0,
+            param_id: 0xfeedfeed,
             param_name: 'EXAMPLE_STR_PARAM',
             param_type: 'string_param',
             parameter_group: 'GROUP_2',

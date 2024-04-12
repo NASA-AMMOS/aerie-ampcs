@@ -217,7 +217,10 @@ export type ParameterString = Omit<ParameterBase, 'bit_length'> &
   };
 
 export type ParameterEnum = ParameterBase &
-  Pick<FswCommandArgumentEnum, 'default_value'> & {
+  Pick<FswCommandArgumentEnum, 'default_value'> &
+  // schema shows enums with min/max having type normalizedString
+  // however dictionaries use numerics
+  Pick<FswCommandArgumentInteger, 'range'> & {
     param_type: 'enum_param';
     enum_type: Enum;
     units: string;
@@ -228,6 +231,10 @@ export type ParamMap = { [stem: string]: Parameter };
 type ParameterGroup = {
   param_group_name: string;
   group_params_names: string[];
+};
+
+type ParameterNameToGroupMap = {
+  [param_name: string]: ParameterGroup;
 };
 
 export type ParameterDictionary = Pick<
@@ -681,17 +688,16 @@ function parseEnum(enumTable): Enum {
 function parseParam(
   paramElement: Element,
   enumMap: EnumMap,
-  paramGroups: ParameterGroup[],
+  paramNameToGroupMap: ParameterNameToGroupMap,
 ): Parameter | null {
   const { attributes: attrs } = paramElement;
-  const param_id = toNumber(attrs?.param_id as string)!;
+  const param_id = parseInt(attrs?.param_id as string, 16);
   const param_name = (attrs?.param_name as string) ?? '';
   const parameter_version = toNumber(attrs?.parameter_version as string);
   const units = (attrs?.units as string) ?? '';
   // not all parameters are in a group
   const parameter_group =
-    paramGroups.find(group => group.group_params_names.includes(param_name))
-      ?.param_group_name ?? '';
+    paramNameToGroupMap[param_name]?.param_group_name ?? '';
   let bit_length: ParameterBase['bit_length'] = null;
   let max_bit_length: ParameterString['max_bit_length'] = NaN;
   let enum_name: string | null = null;
@@ -705,7 +711,7 @@ function parseParam(
 
   if (paramElement.elements && paramElement.elements.length) {
     let param_type = '';
-    let range: null | NumericRange | string[] = null;
+    let range: ParameterNumber['range'] = null;
     for (const valueElement of paramElement.elements) {
       if (valueElement.name === 'parameter_type') {
         const paramTypeChild = valueElement.elements![0];
@@ -772,23 +778,21 @@ function parseParam(
         default_value,
       };
     } else if (param_type === 'enum_param') {
-      let default_value: string | null = null;
+      let default_value: ParameterEnum['default_value'] = null;
       let enum_type: Enum = enumMap[enum_name!];
       for (const valueElement of paramElement.elements) {
         if (valueElement.name === 'default_value') {
-          const defaultValueSymbol = valueElement?.elements![0].text as string;
+          const defaultValueSymbol = valueElement.elements![0].text as string;
           default_value =
-            (
-              enum_type.values.find(
-                ev => ev.symbol === defaultValueSymbol,
-              ) as EnumValue
-            )?.symbol ?? null;
+            enum_type.values.find(ev => ev.symbol === defaultValueSymbol)
+              ?.symbol ?? null;
         }
       }
       return {
         ...paramBase,
         bit_length,
         param_type,
+        range,
         units,
         default_value,
         enum_type,
@@ -819,7 +823,7 @@ export function parseParameterDictionary(
   const enums: Enum[] = [];
   const params: Parameter[] = [];
   const paramMap: ParamMap = {};
-  const paramGroups: ParameterGroup[] = [];
+  const paramNameToGroupMap: ParameterNameToGroupMap = {};
 
   if (
     parameterDictionary?.name === 'param-def' &&
@@ -827,14 +831,14 @@ export function parseParameterDictionary(
   ) {
     for (const parameterDictionaryElement of parameterDictionary.elements) {
       // Header.
-      if (parameterDictionaryElement?.name === 'header') {
+      if (parameterDictionaryElement.name === 'header') {
         header = parseHeader(parameterDictionaryElement);
       }
 
       // Enum Definitions.
       if (
-        parameterDictionaryElement?.name === 'enum_definitions' &&
-        parameterDictionaryElement?.elements?.length
+        parameterDictionaryElement.name === 'enum_definitions' &&
+        parameterDictionaryElement.elements?.length
       ) {
         for (const enumTable of parameterDictionaryElement.elements) {
           const enumeration: Enum = parseEnum(enumTable);
@@ -845,24 +849,24 @@ export function parseParameterDictionary(
 
       // Parameter Groups.
       if (
-        parameterDictionaryElement?.name === 'parameter_groups' &&
-        parameterDictionaryElement?.elements?.length
+        parameterDictionaryElement.name === 'parameter_groups' &&
+        parameterDictionaryElement.elements?.length
       ) {
         for (const parameterGroupElement of parameterDictionaryElement.elements) {
           if (
-            parameterGroupElement?.name === 'parameter_group' &&
-            parameterGroupElement?.elements?.length
+            parameterGroupElement.name === 'parameter_group' &&
+            parameterGroupElement.elements?.length
           ) {
             const param_group_name =
               parameterGroupElement.attributes.param_group_name;
-            const group_params_names: string[] = [];
+            const group_params_names: ParameterGroup['group_params_names'] = [];
             for (const group_params of parameterGroupElement.elements) {
               if (
                 group_params.name === 'group_params' &&
-                group_params?.elements?.length
+                group_params.elements?.length
               ) {
                 for (const group_param of group_params.elements) {
-                  const group_param_name = group_param.elements![0].text;
+                  const group_param_name = group_param.elements[0].text;
                   if (typeof group_param_name === 'string') {
                     group_params_names.push(group_param_name);
                   }
@@ -873,7 +877,9 @@ export function parseParameterDictionary(
               param_group_name,
               group_params_names,
             };
-            paramGroups.push(paramGroup);
+            paramGroup.group_params_names.forEach(
+              param_name => (paramNameToGroupMap[param_name] = paramGroup),
+            );
           }
         }
       }
@@ -885,7 +891,7 @@ export function parseParameterDictionary(
         const param = parseParam(
           parameterDictionaryElement,
           enumMap,
-          paramGroups,
+          paramNameToGroupMap,
         );
         if (param) {
           paramMap[param.param_name] = param;
