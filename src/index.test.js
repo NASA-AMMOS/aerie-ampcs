@@ -1,5 +1,10 @@
 import { deepStrictEqual } from 'assert';
-import { parse, parseParameterDictionary } from '../dist/index.js';
+import {
+  parse,
+  parseParameterDictionary,
+  parameterDictionaryReplacer,
+  parseParameterDictionaryJson,
+} from '../dist/index.js';
 
 describe('@nasa-jpl/aerie-ampcs', () => {
   describe('parse', () => {
@@ -1403,84 +1408,70 @@ describe('@nasa-jpl/aerie-ampcs', () => {
 </param-def>
 
       `;
+      const TEST_WARMUP_DURATION = {
+        bit_length: 32,
+        default_value: 1200,
+        description: 'A description of the system',
+        param_id: 240,
+        param_name: 'TEST_WARMUP_DURATION',
+        param_type: 'unsigned_int_param',
+        parameter_group: 'TEST_GROUP_1',
+        parameter_version: 1,
+        range: {
+          max: 3600,
+          min: 0,
+        },
+        rationale: '2 minutes, longer would be too long',
+        units: 'Seconds',
+      };
+      const SomeOtherEnum = {
+        name: 'SomeOtherEnum',
+        values: [
+          {
+            numeric: 1,
+            symbol: 'CLEAR_A',
+          },
+          {
+            numeric: 2,
+            symbol: 'CLEAR_B',
+          },
+          {
+            numeric: 3,
+            symbol: 'CLEAR_C',
+          },
+        ],
+      };
       /** @type import('./index').ParameterDictionary} */
       const expected = {
         enumMap: {
-          SomeOtherEnum: {
-            name: 'SomeOtherEnum',
-            values: [
-              {
-                numeric: 1,
-                symbol: 'CLEAR_A',
-              },
-              {
-                numeric: 2,
-                symbol: 'CLEAR_B',
-              },
-              {
-                numeric: 3,
-                symbol: 'CLEAR_C',
-              },
-            ],
-          },
+          SomeOtherEnum,
         },
-        enums: [
-          {
-            name: 'SomeOtherEnum',
-            values: [
-              {
-                numeric: 1,
-                symbol: 'CLEAR_A',
-              },
-              {
-                numeric: 2,
-                symbol: 'CLEAR_B',
-              },
-              {
-                numeric: 3,
-                symbol: 'CLEAR_C',
-              },
-            ],
-          },
-        ],
+        enums: [SomeOtherEnum],
         header: {
           mission_name: 'SPACE_MISSION',
           schema_version: '1.0',
           spacecraft_ids: [1],
           version: '1.2.3.4',
         },
-        paramMap: {
-          TEST_WARMUP_DURATION: {
-            bit_length: 32,
-            default_value: 1200,
-            param_id: 240,
-            param_name: 'TEST_WARMUP_DURATION',
-            param_type: 'unsigned_int_param',
-            parameter_group: 'TEST_GROUP_1',
-            parameter_version: 1,
-            range: {
-              max: 3600,
-              min: 0,
-            },
-            units: 'Seconds',
+        paramByTypeMap: {
+          E16: {},
+          E32: {},
+          E8: {},
+          F64: {},
+          I16: {},
+          I32: {},
+          I8: {},
+          STR: {},
+          U16: {},
+          U32: {
+            TEST_WARMUP_DURATION: TEST_WARMUP_DURATION,
           },
+          U8: {},
         },
-        params: [
-          {
-            bit_length: 32,
-            default_value: 1200,
-            param_id: 240,
-            param_name: 'TEST_WARMUP_DURATION',
-            param_type: 'unsigned_int_param',
-            parameter_group: 'TEST_GROUP_1',
-            parameter_version: 1,
-            range: {
-              max: 3600,
-              min: 0,
-            },
-            units: 'Seconds',
-          },
-        ],
+        paramMap: {
+          TEST_WARMUP_DURATION: TEST_WARMUP_DURATION,
+        },
+        params: [TEST_WARMUP_DURATION],
         id: 'SPACE_MISSION-1.2.3.4-1.0',
         path: '/dev/null',
       };
@@ -1529,6 +1520,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
       const expected = {
         bit_length: 8,
         default_value: 'ENABLE',
+        description: 'Sample sysdesc',
         enum_type: {
           name: 'example_enab',
           values: [
@@ -1551,6 +1543,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
           min: 0,
         },
         param_id: 255,
+        rationale: 'emphatic assertion',
         units: '',
       };
       const result = parseParameterDictionary(xml, path);
@@ -1590,6 +1583,17 @@ describe('@nasa-jpl/aerie-ampcs', () => {
   <rationale>configure behavior</rationale>
   </param>
 </param-def>`;
+      const EXAMPLE_STR_PARAM = {
+        default_value: '/file/path',
+        description: 'The maximum string length is 127 ASCII characters',
+        max_bit_length: 1016,
+        param_id: 0xfeedfeed,
+        param_name: 'EXAMPLE_STR_PARAM',
+        param_type: 'string_param',
+        parameter_group: 'GROUP_2',
+        parameter_version: 1,
+        rationale: 'configure behavior',
+      };
       const expected = {
         enumMap: {},
         enums: [],
@@ -1600,33 +1604,67 @@ describe('@nasa-jpl/aerie-ampcs', () => {
           version: '',
         },
         id: '--',
-        paramMap: {
-          EXAMPLE_STR_PARAM: {
-            default_value: '/file/path',
-            max_bit_length: 1016,
-            param_id: 0xfeedfeed,
-            param_name: 'EXAMPLE_STR_PARAM',
-            param_type: 'string_param',
-            parameter_group: 'GROUP_2',
-            parameter_version: 1,
+        paramByTypeMap: {
+          E16: {},
+          E32: {},
+          E8: {},
+          F64: {},
+          I16: {},
+          I32: {},
+          I8: {},
+          STR: {
+            EXAMPLE_STR_PARAM: EXAMPLE_STR_PARAM,
           },
+          U16: {},
+          U32: {},
+          U8: {},
         },
-        params: [
-          {
-            default_value: '/file/path',
-            max_bit_length: 1016,
-            param_id: 0xfeedfeed,
-            param_name: 'EXAMPLE_STR_PARAM',
-            param_type: 'string_param',
-            parameter_group: 'GROUP_2',
-            parameter_version: 1,
-          },
-        ],
+        paramMap: {
+          EXAMPLE_STR_PARAM: EXAMPLE_STR_PARAM,
+        },
+        params: [EXAMPLE_STR_PARAM],
         path: '/dev/null',
       };
       const result = parseParameterDictionary(xml, path);
 
       deepStrictEqual(result, expected);
+    });
+
+    it('round trip to JSON without derived fields', () => {
+      const path = '/dev/null';
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<param-def>
+  <parameter_groups>
+      <parameter_group param_group_name="GROUP_1">
+        <group_params>
+          <group_param>PARAM2</group_param>
+        </group_params>
+      </parameter_group>
+      <parameter_group param_group_name="GROUP_2">
+      <group_params>
+        <group_param>PARAM3</group_param>
+        <group_param>EXAMPLE_STR_PARAM</group_param>
+      </group_params>
+    </parameter_group>
+  </parameter_groups>
+  <param param_id="0xFEEDFEED" param_name="EXAMPLE_STR_PARAM" parameter_version="1" location="NPM" managed_by="Unit tests">
+  <sysdesc>The maximum string length is 127 ASCII characters</sysdesc>
+  <when_applied applied="IMMEDIATELY"/>
+  <categories>
+    <module>test_mod</module>
+    <ops_category>NA</ops_category>
+  </categories>
+  <parameter_type>
+    <string_param max_bit_length="1016"/>
+  </parameter_type>
+  <param_validation custom_validation_required="No"/>
+  <default_value>/file/path</default_value>
+  <rationale>configure behavior</rationale>
+  </param>
+</param-def>`;
+      const result = parseParameterDictionary(xml, path);
+      const json = JSON.stringify(result, parameterDictionaryReplacer, 2);
+      deepStrictEqual(parseParameterDictionaryJson(json), result);
     });
   });
 });
