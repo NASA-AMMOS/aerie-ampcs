@@ -190,6 +190,8 @@ type ParameterBase = {
   parameter_version: number | null;
   parameter_group: string;
   bit_length: number | null;
+  description: string; // sysdesc in the schema
+  rationale: string;
 };
 
 type ParameterNumber = Pick<
@@ -226,7 +228,31 @@ export type ParameterEnum = ParameterBase &
     units: string;
   };
 
-export type ParamMap = { [stem: string]: Parameter };
+export function isParameterUnsigned(
+  param: Parameter,
+): param is ParameterUnsigned {
+  return param.param_type === 'unsigned_int_param';
+}
+
+export function isParameterInteger(
+  param: Parameter,
+): param is ParameterInteger {
+  return param.param_type === 'integer_param';
+}
+
+export function isParameterString(param: Parameter): param is ParameterString {
+  return param.param_type === 'string_param';
+}
+
+export function isParameterEnum(param: Parameter): param is ParameterEnum {
+  return param.param_type === 'enum_param';
+}
+
+export function isParameterFloat(param: Parameter): param is ParameterFloat {
+  return param.param_type === 'float_param';
+}
+
+export type ParamMap<Type extends Parameter> = { [stem: string]: Type };
 
 type ParameterGroup = {
   param_group_name: string;
@@ -242,7 +268,20 @@ export type ParameterDictionary = Pick<
   'enumMap' | 'enums' | 'header' | 'id' | 'path'
 > & {
   params: Parameter[];
-  paramMap: ParamMap;
+  paramMap: ParamMap<Parameter>;
+  paramByTypeMap: {
+    E16: ParamMap<ParameterEnum>;
+    E32: ParamMap<ParameterEnum>;
+    E8: ParamMap<ParameterEnum>;
+    F64: ParamMap<ParameterFloat>;
+    I16: ParamMap<ParameterInteger>;
+    I32: ParamMap<ParameterInteger>;
+    I8: ParamMap<ParameterInteger>;
+    STR: ParamMap<ParameterString>;
+    U16: ParamMap<ParameterUnsigned>;
+    U32: ParamMap<ParameterUnsigned>;
+    U8: ParamMap<ParameterUnsigned>;
+  };
 };
 
 export function parseArguments(element: any): {
@@ -694,19 +733,32 @@ function parseParam(
   const param_id = parseInt(attrs?.param_id as string, 16);
   const param_name = (attrs?.param_name as string) ?? '';
   const parameter_version = toNumber(attrs?.parameter_version as string);
+  let description = '';
+  let rationale = '';
   const units = (attrs?.units as string) ?? '';
   // not all parameters are in a group
   const parameter_group =
     paramNameToGroupMap[param_name]?.param_group_name ?? '';
+  if (paramElement.elements && paramElement.elements.length) {
+    for (const valueElement of paramElement.elements) {
+      if (valueElement.name === 'sysdesc') {
+        description = (valueElement.elements?.[0]?.text as string) ?? '';
+      } else if (valueElement.name === 'rationale') {
+        rationale = (valueElement.elements?.[0]?.text as string) ?? '';
+      }
+    }
+  }
   let bit_length: ParameterBase['bit_length'] = null;
   let max_bit_length: ParameterString['max_bit_length'] = NaN;
   let enum_name: string | null = null;
 
   const paramBase = {
+    description,
     param_id,
     param_name,
     parameter_group,
     parameter_version,
+    rationale,
   };
 
   if (paramElement.elements && paramElement.elements.length) {
@@ -822,7 +874,6 @@ export function parseParameterDictionary(
   const enumMap: EnumMap = {};
   const enums: Enum[] = [];
   const params: Parameter[] = [];
-  const paramMap: ParamMap = {};
   const paramNameToGroupMap: ParameterNameToGroupMap = {};
 
   if (
@@ -842,7 +893,6 @@ export function parseParameterDictionary(
       ) {
         for (const enumTable of parameterDictionaryElement.elements) {
           const enumeration: Enum = parseEnum(enumTable);
-          enumMap[enumeration.name] = enumeration;
           enums.push(enumeration);
         }
       }
@@ -885,6 +935,8 @@ export function parseParameterDictionary(
       }
     }
 
+    Object.assign(enumMap, buildEnumMap(enums));
+
     for (const parameterDictionaryElement of parameterDictionary.elements) {
       // param
       if (parameterDictionaryElement?.name === 'param') {
@@ -894,12 +946,13 @@ export function parseParameterDictionary(
           paramNameToGroupMap,
         );
         if (param) {
-          paramMap[param.param_name] = param;
           params.push(param);
         }
       }
     }
   }
+
+  const { paramMap, paramByTypeMap } = buildParamCaches(params);
 
   const id = `${header.mission_name}-${header.version}-${header.schema_version}`;
   return {
@@ -910,5 +963,98 @@ export function parseParameterDictionary(
     header,
     params,
     paramMap,
+    paramByTypeMap,
   };
+}
+
+export function buildEnumMap(enums: Enum[]) {
+  const enumMap: EnumMap = {};
+  enums.forEach(enumeration => (enumMap[enumeration.name] = enumeration));
+  return enumMap;
+}
+
+export function buildParamCaches(params: Parameter[]) {
+  const paramMap: ParamMap<Parameter> = {};
+  const E8: ParamMap<ParameterEnum> = {};
+  const E16: ParamMap<ParameterEnum> = {};
+  const E32: ParamMap<ParameterEnum> = {};
+  const F64: ParamMap<ParameterFloat> = {};
+  const I8: ParamMap<ParameterInteger> = {};
+  const I16: ParamMap<ParameterInteger> = {};
+  const I32: ParamMap<ParameterInteger> = {};
+  const STR: ParamMap<ParameterString> = {};
+  const U8: ParamMap<ParameterUnsigned> = {};
+  const U16: ParamMap<ParameterUnsigned> = {};
+  const U32: ParamMap<ParameterUnsigned> = {};
+  params.forEach(param => {
+    paramMap[param.param_name] = param;
+    if (isParameterEnum(param) && param.bit_length === 8) {
+      E8[param.param_name] = param;
+    } else if (isParameterEnum(param) && param.bit_length === 16) {
+      E16[param.param_name] = param;
+    } else if (isParameterEnum(param) && param.bit_length === 32) {
+      E32[param.param_name] = param;
+    } else if (isParameterFloat(param)) {
+      F64[param.param_name] = param;
+    } else if (isParameterInteger(param) && param.bit_length === 8) {
+      I8[param.param_name] = param;
+    } else if (isParameterInteger(param) && param.bit_length === 16) {
+      I16[param.param_name] = param;
+    } else if (isParameterInteger(param) && param.bit_length === 32) {
+      I32[param.param_name] = param;
+    } else if (isParameterString(param)) {
+      STR[param.param_name] = param;
+    } else if (isParameterUnsigned(param) && param.bit_length === 8) {
+      U8[param.param_name] = param;
+    } else if (isParameterUnsigned(param) && param.bit_length === 16) {
+      U16[param.param_name] = param;
+    } else if (isParameterUnsigned(param) && param.bit_length === 32) {
+      U32[param.param_name] = param;
+    }
+  });
+  return {
+    paramByTypeMap: {
+      E16,
+      E32,
+      E8,
+      F64,
+      I16,
+      I32,
+      I8,
+      STR,
+      U16,
+      U32,
+      U8,
+    },
+    paramMap,
+  };
+}
+
+export function parameterDictionaryReplacer(
+  key: string,
+  value: any,
+): ParameterDictionary {
+  return ['enumMap', 'paramMap', 'paramByTypeMap'].includes(key) ? null : value;
+}
+
+export function parseParameterDictionaryJson(
+  jsonStr: string,
+): ParameterDictionary {
+  const partialDictionary: Omit<
+    ParameterDictionary,
+    'enumMap' | 'paramMap' | 'paramByTypeMap'
+  > &
+    Partial<
+      Pick<ParameterDictionary, 'enumMap' | 'paramMap' | 'paramByTypeMap'>
+    > = JSON.parse(jsonStr);
+  const { paramByTypeMap, paramMap } = buildParamCaches(
+    partialDictionary.params,
+  );
+  const enumMap = buildEnumMap(partialDictionary.enums);
+  const dictionary: ParameterDictionary = Object.assign(partialDictionary, {
+    enumMap,
+    paramByTypeMap,
+    paramMap,
+  });
+  return dictionary;
 }
