@@ -1058,3 +1058,173 @@ export function parseParameterDictionaryJson(
   });
   return dictionary;
 }
+
+export type ChannelDictionary = Pick<
+  CommandDictionary,
+  'header' | 'id' | 'path'
+> & {
+  telemetryGroups: TelemetryGroup[];
+  telemetryGroupMap: TelemetryGroupMap;
+  telemetries: Telemetry[];
+  telemetryMap: TelemetryMap;
+};
+
+export type TelemetryMap = {
+  [abbreviation: string]: Telemetry;
+};
+
+export type Telemetry = {
+  // the primary key for the channel in the ground system
+  abbreviation: string;
+  byte_length: number;
+  channel_derivation: 'None' | 'bit_extract' | 'algorithm';
+  converted_on_board?: 'Yes' | 'No';
+  description: string;
+  // required only for "flight" or "simulation"
+  group_name?: string;
+  // optional 16 bit value  used to identify telemetry items in pre-channelized packets
+  measurement_id?: number;
+  // telemetry channel names should be unique for usability sake, but not used as the primary key
+  name: string;
+  type: string;
+};
+
+export type TelemetryGroup = {
+  group_name: string;
+  group_desc: string;
+  channel_abbreviations: string[];
+};
+
+export type TelemetryGroupMap = {
+  [group_name: string]: TelemetryGroup;
+};
+
+type TelemetryNameToGroupNameMap = {
+  [telemetry_name: string]: string;
+};
+
+function parseTelemetryGroup(telemetryGroupElement: Element): TelemetryGroup {
+  const { attributes } = telemetryGroupElement;
+  const channel_abbreviations: string[] = [];
+  for (const subElement of telemetryGroupElement.elements ?? []) {
+    if (subElement.name === 'group_channel') {
+      channel_abbreviations.push(subElement.elements?.[0].text as string);
+    }
+  }
+  return {
+    channel_abbreviations,
+    group_name: attributes?.group_name as string,
+    group_desc: attributes?.group_desc as string,
+  };
+}
+
+function parseTelemetry(
+  telemetryElement: Element,
+  telemetryNameToGroupNameMap: TelemetryNameToGroupNameMap,
+): Telemetry {
+  const { attributes } = telemetryElement;
+  const abbreviation = attributes?.abbreviation as string;
+  const name = attributes?.name as string;
+  let description: Telemetry['description'] = '';
+  let measurement_id: Telemetry['measurement_id'] = undefined;
+
+  for (const subElement of telemetryElement.elements ?? []) {
+    switch (subElement?.name) {
+      case 'measurement_id':
+        measurement_id =
+          toNumber(subElement.elements?.[0].text as string) ?? undefined;
+        break;
+      case 'description':
+        description = subElement.elements?.[0].text as string;
+        break;
+    }
+  }
+
+  return {
+    abbreviation,
+    byte_length: toNumber(attributes?.byte_length as string) ?? NaN,
+    channel_derivation:
+      attributes?.channel_derivation as Telemetry['channel_derivation'],
+    converted_on_board:
+      attributes?.converted_on_board as Telemetry['converted_on_board'],
+    description,
+    group_name: telemetryNameToGroupNameMap[abbreviation],
+    measurement_id,
+    name,
+    type: attributes?.type as string,
+  };
+}
+
+export function parseChannelDictionary(
+  xml: string,
+  path: string | null = null,
+  options: Options.XML2JS = { ignoreComment: true },
+): ChannelDictionary {
+  const { elements } = xml2js(xml, options);
+  const [channelDictionary] = elements;
+  let header: Header = {
+    mission_name: '',
+    schema_version: '',
+    spacecraft_ids: [],
+    version: '',
+  };
+  const telemetryGroups: TelemetryGroup[] = [];
+  const telemetryGroupMap: TelemetryGroupMap = {};
+  const telemetryNameToGroupNameMap: TelemetryNameToGroupNameMap = {};
+
+  const telemetries: Telemetry[] = [];
+  const telemetryMap: TelemetryMap = {};
+
+  if (
+    channelDictionary?.name === 'telemetry_dictionary' &&
+    channelDictionary?.elements?.length
+  ) {
+    for (const channelDictionaryElement of channelDictionary.elements) {
+      // Header.
+      if (channelDictionaryElement.name === 'header') {
+        header = parseHeader(channelDictionaryElement);
+      }
+
+      // telemetry_groups
+      if (channelDictionaryElement.name === 'telemetry_groups') {
+        for (const groupElement of channelDictionaryElement.elements) {
+          if (groupElement.name === 'group') {
+            const group = parseTelemetryGroup(groupElement);
+            telemetryGroups.push(group);
+            telemetryGroupMap[group.group_name] = group;
+            group.channel_abbreviations.forEach(channel_abbv => {
+              telemetryNameToGroupNameMap[channel_abbv] = group.group_name;
+            });
+          }
+        }
+      }
+    }
+
+    for (const channelDictionaryElement of channelDictionary.elements) {
+      if (channelDictionaryElement.name === 'telemetry_definitions') {
+        for (const telemetryElement of channelDictionaryElement.elements) {
+          if (telemetryElement.name === 'telemetry') {
+            const telemetry = parseTelemetry(
+              telemetryElement,
+              telemetryNameToGroupNameMap,
+            );
+            telemetries.push(telemetry);
+            telemetryMap[telemetry.abbreviation] = telemetry;
+          }
+        }
+      }
+    }
+  }
+
+  const id = `${header.mission_name}-${header.version}-${header.schema_version}`;
+
+  return {
+    header,
+    id,
+    path,
+    telemetryGroups,
+    telemetryGroupMap,
+    telemetries,
+    telemetryMap,
+  };
+}

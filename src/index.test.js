@@ -4,6 +4,7 @@ import {
   parseParameterDictionary,
   parameterDictionaryReplacer,
   parseParameterDictionaryJson,
+  parseChannelDictionary,
 } from '../dist/index.js';
 
 describe('@nasa-jpl/aerie-ampcs', () => {
@@ -1490,7 +1491,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
     </spacecraft_ids>
   </header>
   <enum_definitions>
-    <enum_table name="example_enab">
+    <enum_table name="example_enum">
       <values>
         <enum symbol="DISABLE" numeric="0"/>
         <enum symbol="ENABLE" numeric="1"/>
@@ -1505,7 +1506,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
       <ops_category>EXAMPLE</ops_category>
     </categories>
     <parameter_type>
-      <enum_param bit_length="8" enum_name="example_enab">
+      <enum_param bit_length="8" enum_name="example_enum">
         <range_of_values>
           <include min="0" max="1"/>
         </range_of_values>
@@ -1522,7 +1523,7 @@ describe('@nasa-jpl/aerie-ampcs', () => {
         default_value: 'ENABLE',
         description: 'Sample sysdesc',
         enum_type: {
-          name: 'example_enab',
+          name: 'example_enum',
           values: [
             {
               numeric: 0,
@@ -1665,6 +1666,188 @@ describe('@nasa-jpl/aerie-ampcs', () => {
       const result = parseParameterDictionary(xml, path);
       const json = JSON.stringify(result, parameterDictionaryReplacer, 2);
       deepStrictEqual(parseParameterDictionaryJson(json), result);
+    });
+  });
+
+  describe('parse channel dictionary', () => {
+    it('single unsigned channel', () => {
+      const path = '/dev/null';
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<telemetry_dictionary>
+  <header mission_name="SPACE_MISSION" version="1.2.3.4" schema_version="1.0">
+    <spacecraft_ids>
+      <spacecraft_id value="1"/>
+    </spacecraft_ids>
+  </header>
+  <telemetry_definitions>
+    <telemetry abbreviation="ABC-1234" channel_derivation="None" name="ABC_VALUE_OF_1234" type="unsigned" source="flight" byte_length="4" >
+      <measurement_id>4321</measurement_id>
+      <description>What does this channel mean</description>
+      <raw_units>Bytes</raw_units>
+      <categories>
+        <module>abc_mod</module>
+        <ops_category>ABC</ops_category>
+      </categories>
+    </telemetry>
+  </telemetry_definitions>
+</telemetry_dictionary>`;
+
+      const ABC_1234 = {
+        abbreviation: 'ABC-1234',
+        byte_length: 4,
+        channel_derivation: 'None',
+        converted_on_board: undefined,
+        description: 'What does this channel mean',
+        group_name: undefined,
+        measurement_id: 4321,
+        name: 'ABC_VALUE_OF_1234',
+        type: 'unsigned',
+      };
+
+      const result = parseChannelDictionary(xml, path);
+      const expected = {
+        header: {
+          mission_name: 'SPACE_MISSION',
+          schema_version: '1.0',
+          spacecraft_ids: [1],
+          version: '1.2.3.4',
+        },
+        id: 'SPACE_MISSION-1.2.3.4-1.0',
+        path: '/dev/null',
+        telemetryGroups: [],
+        telemetryGroupMap: {},
+        telemetries: [ABC_1234],
+        telemetryMap: {
+          'ABC-1234': ABC_1234,
+        },
+      };
+      deepStrictEqual(result, expected);
+    });
+
+    it('multiple channels and groups', () => {
+      const path = '/dev/null';
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<telemetry_dictionary>
+  <header mission_name="SPACE_MISSION" version="1.2.3.4" schema_version="1.0">
+    <spacecraft_ids>
+      <spacecraft_id value="1"/>
+    </spacecraft_ids>
+  </header>
+  <telemetry_groups>
+    <group group_name="group_number1" group_desc="first set of channels">
+      <group_channel>ABC-1000</group_channel>
+      <group_channel>ABC-1234</group_channel>
+    </group>
+    <group group_name="group_number2" group_desc="second set of channels">
+      <group_channel>DEF-1000</group_channel>
+    </group>
+  </telemetry_groups>
+  <telemetry_definitions>
+    <telemetry abbreviation="ABC-1000" channel_derivation="None" name="ABC_VALUE_OF_1000" type="unsigned" source="flight" byte_length="4" >
+      <measurement_id>0001</measurement_id>
+      <description>What does ABC-1000 mean</description>
+      <raw_units>Bytes</raw_units>
+      <categories>
+        <module>abc_mod</module>
+        <ops_category>ABC</ops_category>
+      </categories>
+    </telemetry>
+    <telemetry abbreviation="DEF-1000" channel_derivation="None" name="DEF_VALUE_OF_1000" type="unsigned" source="flight" byte_length="4" >
+      <measurement_id>1010</measurement_id>
+      <description>What does DEF-1000 mean</description>
+      <categories>
+        <module>abc_mod</module>
+        <ops_category>DEF</ops_category>
+      </categories>
+    </telemetry>
+    <telemetry abbreviation="ABC-1234" channel_derivation="None" name="ABC_VALUE_OF_1234" type="unsigned" source="flight" byte_length="4" >
+      <measurement_id>4321</measurement_id>
+      <description>What does ABC-1234 mean</description>
+      <raw_units>Bytes</raw_units>
+      <categories>
+        <module>abc_mod</module>
+        <ops_category>ABC</ops_category>
+      </categories>
+    </telemetry>
+  </telemetry_definitions>
+</telemetry_dictionary>`;
+
+      const ABC_1000 = {
+        abbreviation: 'ABC-1000',
+        byte_length: 4,
+        channel_derivation: 'None',
+        converted_on_board: undefined,
+        description: 'What does ABC-1000 mean',
+        group_name: 'group_number1',
+        measurement_id: 1,
+        name: 'ABC_VALUE_OF_1000',
+        type: 'unsigned',
+      };
+
+      const ABC_1234 = {
+        abbreviation: 'ABC-1234',
+        byte_length: 4,
+        channel_derivation: 'None',
+        converted_on_board: undefined,
+        description: 'What does ABC-1234 mean',
+        group_name: 'group_number1',
+        measurement_id: 4321,
+        name: 'ABC_VALUE_OF_1234',
+        type: 'unsigned',
+      };
+
+      const DEF_1000 = {
+        abbreviation: 'DEF-1000',
+        byte_length: 4,
+        channel_derivation: 'None',
+        converted_on_board: undefined,
+        description: 'What does DEF-1000 mean',
+        group_name: 'group_number2',
+        measurement_id: 1010,
+        name: 'DEF_VALUE_OF_1000',
+        type: 'unsigned',
+      };
+
+      const group_number1 = {
+        group_name: 'group_number1',
+        group_desc: 'first set of channels',
+        channel_abbreviations: ['ABC-1000', 'ABC-1234'],
+      };
+
+      const group_number2 = {
+        group_name: 'group_number2',
+        group_desc: 'second set of channels',
+        channel_abbreviations: ['DEF-1000'],
+      };
+
+      const result = parseChannelDictionary(xml, path);
+
+      const expected = {
+        header: {
+          mission_name: 'SPACE_MISSION',
+          schema_version: '1.0',
+          spacecraft_ids: [1],
+          version: '1.2.3.4',
+        },
+        id: 'SPACE_MISSION-1.2.3.4-1.0',
+        path: '/dev/null',
+        telemetryGroups: [group_number1, group_number2],
+        telemetryGroupMap: {
+          [group_number1.group_name]: group_number1,
+          [group_number2.group_name]: group_number2,
+        },
+        telemetries: [ABC_1000, DEF_1000, ABC_1234],
+        telemetryMap: {
+          'ABC-1000': ABC_1000,
+          'ABC-1234': ABC_1234,
+          'DEF-1000': DEF_1000,
+        },
+      };
+      deepStrictEqual(result, expected);
+      deepStrictEqual(
+        result.telemetryGroupMap[DEF_1000.group_name],
+        group_number2,
+      );
     });
   });
 });
