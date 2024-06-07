@@ -171,6 +171,10 @@ describe('@nasa-jpl/aerie-ampcs', () => {
               </categories>
               <description>Does something else interesting.</description>
             </hw_command>
+            <hw_command opcode="" stem="HDW_CMD_2">
+              <!-- empty description tag -->
+              <description></description>
+            </hw_command>
           </command_definitions>
         </command_dictionary>
       `;
@@ -197,6 +201,11 @@ describe('@nasa-jpl/aerie-ampcs', () => {
             stem: 'HDW_CMD_1',
             type: 'hw_command',
           },
+          HDW_CMD_2: {
+            description: '',
+            stem: 'HDW_CMD_2',
+            type: 'hw_command',
+          },
         },
         hwCommands: [
           {
@@ -207,6 +216,11 @@ describe('@nasa-jpl/aerie-ampcs', () => {
           {
             description: 'Does something else interesting.',
             stem: 'HDW_CMD_1',
+            type: 'hw_command',
+          },
+          {
+            description: '',
+            stem: 'HDW_CMD_2',
             type: 'hw_command',
           },
         ],
@@ -244,6 +258,10 @@ describe('@nasa-jpl/aerie-ampcs', () => {
                 <category name="cat" value="a" />
               </categories>
               <description><![CDATA[Does something interesting to the spacecraft.]]></description>
+            </fsw_command>
+            <fsw_command opcode="" stem="FSW_CMD_1">
+              <!-- empty description -->
+              <description />
             </fsw_command>
           </command_definitions>
         </command_dictionary>
@@ -320,6 +338,13 @@ describe('@nasa-jpl/aerie-ampcs', () => {
             stem: 'FSW_CMD_0',
             type: 'fsw_command',
           },
+          FSW_CMD_1: {
+            argumentMap: {},
+            arguments: [],
+            description: '',
+            stem: 'FSW_CMD_1',
+            type: 'fsw_command',
+          },
         },
         fswCommands: [
           {
@@ -327,6 +352,13 @@ describe('@nasa-jpl/aerie-ampcs', () => {
             arguments: args,
             description: 'Does something interesting to the spacecraft.',
             stem: 'FSW_CMD_0',
+            type: 'fsw_command',
+          },
+          {
+            argumentMap: {},
+            arguments: [],
+            description: '',
+            stem: 'FSW_CMD_1',
             type: 'fsw_command',
           },
         ],

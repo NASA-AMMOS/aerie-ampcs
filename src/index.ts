@@ -613,17 +613,21 @@ export function parse(
 
               // Description.
               if (commandElement?.name === 'description') {
-                const [descriptionElement] = commandElement.elements;
-                const { type } = descriptionElement;
-                const description = descriptionElement[type];
+                if (commandElement?.elements?.length) {
+                  const descriptionElement = commandElement.elements[0];
+                  const { type } = descriptionElement;
+                  const description = descriptionElement[type];
 
-                if (description !== undefined) {
-                  commandDescription = description;
+                  if (description !== undefined) {
+                    commandDescription = description;
+                  } else {
+                    console.log(
+                      'Unknown FSW command description type: ',
+                      commandElement,
+                    );
+                  }
                 } else {
-                  console.log(
-                    'Unknown FSW command description type: ',
-                    commandElement,
-                  );
+                  console.log('Empty FSW command description: ', commandElement);
                 }
               }
             }
@@ -647,17 +651,21 @@ export function parse(
             for (const commandElement of command.elements) {
               // Description.
               if (commandElement?.name === 'description') {
-                const [descriptionElement] = commandElement.elements;
-                const { type } = descriptionElement;
-                const description = descriptionElement[type];
+                if (commandElement?.elements?.length) {
+                  const descriptionElement = commandElement.elements[0];
+                  const { type } = descriptionElement;
+                  const description = descriptionElement[type];
 
-                if (description !== undefined) {
-                  commandDescription = description;
+                  if (description !== undefined) {
+                    commandDescription = description;
+                  } else {
+                    console.log(
+                      'Unknown HW command description type: ',
+                      commandElement,
+                    );
+                  }
                 } else {
-                  console.log(
-                    'Unknown HW command description type: ',
-                    commandElement,
-                  );
+                  console.log('Empty HW command description: ', commandElement);
                 }
               }
             }
