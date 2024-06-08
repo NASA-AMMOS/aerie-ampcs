@@ -244,6 +244,8 @@ describe('@nasa-jpl/aerie-ampcs', () => {
                 <boolean_arg name="boolean_arg_0" bit_length="8" default_value="FALSE">
                   <!-- comment -->
                   <boolean_format true_str="TRUE" false_str="FALSE" />
+                  <!-- empty description -->
+                  <description />
                 </boolean_arg>
                 <numeric_arg name="numeric_arg_0" type="float" bit_length="64" units="none" default_value="1">
                   <!-- comment -->

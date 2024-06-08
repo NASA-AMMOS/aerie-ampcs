@@ -314,17 +314,10 @@ export function parseArguments(element: any): {
 
         // Description.
         if (argElement?.name === 'description') {
-          const [descriptionElement] = argElement.elements;
-          const { type } = descriptionElement;
-          description = descriptionElement[type];
-
-          if (description === undefined) {
-            console.log(
-              'Unknown FSW command argument description type: ',
-              argElement,
-            );
-            description = '';
-          }
+          description = parseDescription(
+            argElement,
+            'FSW command argument description',
+          );
         }
 
         // Range of Values.
@@ -613,22 +606,10 @@ export function parse(
 
               // Description.
               if (commandElement?.name === 'description') {
-                if (commandElement?.elements?.length) {
-                  const descriptionElement = commandElement.elements[0];
-                  const { type } = descriptionElement;
-                  const description = descriptionElement[type];
-
-                  if (description !== undefined) {
-                    commandDescription = description;
-                  } else {
-                    console.log(
-                      'Unknown FSW command description type: ',
-                      commandElement,
-                    );
-                  }
-                } else {
-                  console.log('Empty FSW command description: ', commandElement);
-                }
+                commandDescription = parseDescription(
+                  commandElement,
+                  'FSW command description',
+                );
               }
             }
 
@@ -651,22 +632,10 @@ export function parse(
             for (const commandElement of command.elements) {
               // Description.
               if (commandElement?.name === 'description') {
-                if (commandElement?.elements?.length) {
-                  const descriptionElement = commandElement.elements[0];
-                  const { type } = descriptionElement;
-                  const description = descriptionElement[type];
-
-                  if (description !== undefined) {
-                    commandDescription = description;
-                  } else {
-                    console.log(
-                      'Unknown HW command description type: ',
-                      commandElement,
-                    );
-                  }
-                } else {
-                  console.log('Empty HW command description: ', commandElement);
-                }
+                commandDescription = parseDescription(
+                  commandElement,
+                  'HW command description',
+                );
               }
             }
 
@@ -717,6 +686,27 @@ function parseHeader(headerElement): Header {
     spacecraft_ids,
     version: attributes.version ?? '',
   };
+}
+
+function parseDescription(
+  descriptionElement: Element,
+  logName?: string,
+): string {
+  logName = logName || 'description';
+  if (descriptionElement.elements?.length) {
+    const innerElement = descriptionElement.elements[0];
+    const { type } = innerElement;
+    const description = innerElement[type || ''];
+
+    if (description !== undefined) {
+      return description;
+    } else {
+      console.log(`Unknown ${logName} type: `, descriptionElement);
+    }
+  } else {
+    console.log(`Empty ${logName}: `, descriptionElement);
+  }
+  return '';
 }
 
 function parseEnum(enumTable): Enum {
