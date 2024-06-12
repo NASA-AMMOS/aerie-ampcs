@@ -774,7 +774,8 @@ function parseParam(
           enum_name = paramTypeChild.attributes?.enum_name as string;
         }
 
-        for (const paramChildElement of paramTypeChild.elements ?? []) {
+        for (const paramChildElement of paramTypeChild.elements ??
+          ([] as Element[])) {
           if (paramChildElement.name === 'range_of_values') {
             if (
               param_type === 'enum_param' ||
@@ -782,6 +783,11 @@ function parseParam(
               param_type === 'integer_param' ||
               param_type === 'float_param'
             ) {
+              if (!paramChildElement.elements?.length) {
+                throw new Error(
+                  'range_of_values element must contain a valid range',
+                );
+              }
               const [{ attributes }] = paramChildElement.elements!;
               if (attributes) {
                 const min = toNumber(attributes.min as string);
