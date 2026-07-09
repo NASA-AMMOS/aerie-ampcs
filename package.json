@@ -23,6 +23,13 @@
     "prepublishOnly": "npm run build",
     "test": "npm run build && mocha --reporter mochawesome --reporter-options reportDir=test-report,reportFilename=test-report src/index.test.js"
   },
+  "keywords": [
+    "plandev",
+    "seqdev",
+    "utils",
+    "NASA",
+    "JPL"
+  ],
   "dependencies": {
     "xml-js": "^1.6.11"
   },
