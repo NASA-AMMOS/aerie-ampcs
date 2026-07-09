@@ -1,13 +1,13 @@
-[![npm version](https://img.shields.io/npm/v/@nasa-jpl/aerie-ampcs.svg)](https://www.npmjs.com/package/@nasa-jpl/aerie-ampcs)
+[![npm version](https://img.shields.io/npm/v/@nasa-jpl/plandev-ampcs.svg)](https://www.npmjs.com/package/@nasa-jpl/plandev-ampcs)
 
-# @nasa-jpl/aerie-ampcs
+# @nasa-jpl/plandev-ampcs
 
 This package contains utility functions to convert a standard XML [AMPCS command dictionary](https://github.com/NASA-AMMOS/ampcs-dict-schemas/blob/main/CommandDictionary.rnc) to JavaScript.
 
 ## Install
 
 ```sh
-npm install @nasa-jpl/aerie-ampcs --save
+npm install @nasa-jpl/plandev-ampcs --save
 ```
 
 ## Usage
@@ -17,7 +17,7 @@ npm install @nasa-jpl/aerie-ampcs --save
 Parse an XML string in the AMPCS command dictionary standard into JavaScript.
 
 ```ts
-import { parse } from '@nasa-jpl/aerie-ampcs';
+import { parse } from '@nasa-jpl/plandev-ampcs';
 
 const xml = `
   <?xml version='1.0' encoding='UTF-8'?>

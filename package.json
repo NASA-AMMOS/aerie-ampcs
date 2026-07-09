@@ -1,12 +1,12 @@
 {
-  "name": "@nasa-jpl/aerie-ampcs",
+  "name": "@nasa-jpl/plandev-ampcs",
   "description": "Utility functions to convert a standard XML AMPCS command dictionary to JavaScript.",
   "version": "1.0.6",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/NASA-AMMOS/aerie-ampcs.git"
+    "url": "https://github.com/NASA-AMMOS/plandev-ampcs.git"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
