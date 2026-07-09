@@ -8,6 +8,9 @@
     "type": "git",
     "url": "https://github.com/NASA-AMMOS/plandev-ampcs.git"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
