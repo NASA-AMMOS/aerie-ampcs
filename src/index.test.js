@@ -7,7 +7,7 @@ import {
   parseChannelDictionary,
 } from '../dist/index.js';
 
-describe('@nasa-jpl/aerie-ampcs', () => {
+describe('@nasa-jpl/plandev-ampcs', () => {
   describe('parse', () => {
     it('header', () => {
       const xml = `
